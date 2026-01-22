@@ -92,4 +92,3 @@ focusflow-kanban/
 ## License
 
 MIT
-
