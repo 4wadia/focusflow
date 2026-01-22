@@ -8,32 +8,36 @@ const resend = RESEND_API_KEY ? new Resend(RESEND_API_KEY) : null;
 
 // Generate random verification token
 export const generateVerificationToken = (): string => {
-    return Math.random().toString(36).substring(2) + Date.now().toString(36);
+  return crypto.randomUUID();
 };
 
-// Generate 6-digit OTP
+// Generate 6-digit OTP securely
 export const generateOTP = (): string => {
-    return Math.floor(100000 + Math.random() * 900000).toString();
+  const array = new Uint32Array(1);
+  crypto.getRandomValues(array);
+  // Map to 100000-999999 range
+  const otp = (array[0] % 900000) + 100000;
+  return otp.toString();
 };
 
 // Send verification email
 export const sendVerificationEmail = async (
-    email: string,
-    name: string,
-    verificationToken: string
+  email: string,
+  name: string,
+  verificationToken: string
 ): Promise<boolean> => {
-    if (!resend) {
-        console.warn('⚠️ Resend API key not configured. Email not sent.');
-        console.log(`📧 Verification link: ${FRONTEND_URL}/verify?token=${verificationToken}`);
-        return true; // Return true for development
-    }
+  if (!resend) {
+    console.warn('⚠️ Resend API key not configured. Email not sent.');
+    console.log(`📧 Verification link: ${FRONTEND_URL}/verify?token=${verificationToken}`);
+    return true; // Return true for development
+  }
 
-    try {
-        const { error } = await resend.emails.send({
-            from: FROM_EMAIL,
-            to: email,
-            subject: 'Verify your FocusFlow account',
-            html: `
+  try {
+    const { error } = await resend.emails.send({
+      from: FROM_EMAIL,
+      to: email,
+      subject: 'Verify your FocusFlow account',
+      html: `
         <div style="font-family: 'Inter', -apple-system, sans-serif; max-width: 600px; margin: 0 auto; padding: 40px 20px;">
           <div style="text-align: center; margin-bottom: 30px;">
             <h1 style="color: #171717; margin: 0;">FocusFlow</h1>
@@ -65,37 +69,37 @@ export const sendVerificationEmail = async (
           </p>
         </div>
       `,
-        });
+    });
 
-        if (error) {
-            console.error('Failed to send verification email:', error);
-            return false;
-        }
-
-        return true;
-    } catch (error) {
-        console.error('Email sending error:', error);
-        return false;
+    if (error) {
+      console.error('Failed to send verification email:', error);
+      return false;
     }
+
+    return true;
+  } catch (error) {
+    console.error('Email sending error:', error);
+    return false;
+  }
 };
 
 // Send OTP email
 export const sendOTPEmail = async (
-    email: string,
-    otp: string
+  email: string,
+  otp: string
 ): Promise<boolean> => {
-    if (!resend) {
-        console.warn('⚠️ Resend API key not configured. Email not sent.');
-        console.log(`🔢 OTP Code: ${otp}`);
-        return true;
-    }
+  if (!resend) {
+    console.warn('⚠️ Resend API key not configured. Email not sent.');
+    console.log(`🔢 OTP Code: ${otp}`);
+    return true;
+  }
 
-    try {
-        const { error } = await resend.emails.send({
-            from: FROM_EMAIL,
-            to: email,
-            subject: 'Your FocusFlow verification code',
-            html: `
+  try {
+    const { error } = await resend.emails.send({
+      from: FROM_EMAIL,
+      to: email,
+      subject: 'Your FocusFlow verification code',
+      html: `
         <div style="font-family: 'Inter', -apple-system, sans-serif; max-width: 600px; margin: 0 auto; padding: 40px 20px;">
           <div style="text-align: center; margin-bottom: 30px;">
             <h1 style="color: #171717; margin: 0;">FocusFlow</h1>
@@ -120,16 +124,16 @@ export const sendOTPEmail = async (
           </p>
         </div>
       `,
-        });
+    });
 
-        if (error) {
-            console.error('Failed to send OTP email:', error);
-            return false;
-        }
-
-        return true;
-    } catch (error) {
-        console.error('Email sending error:', error);
-        return false;
+    if (error) {
+      console.error('Failed to send OTP email:', error);
+      return false;
     }
+
+    return true;
+  } catch (error) {
+    console.error('Email sending error:', error);
+    return false;
+  }
 };
