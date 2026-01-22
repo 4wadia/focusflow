@@ -243,35 +243,86 @@ export const taskRoutes = new Elysia({ prefix: '/api/tasks' })
         }
 
         const oldColumnId = task.columnId.toString();
+        const oldOrder = task.order;
         const newColumnId = body.columnId;
         const newOrder = body.order;
 
-        // Update the task's column and order
-        task.columnId = newColumnId;
-        task.order = newOrder;
-        await task.save();
-
-        // If moving to a different column, reorder tasks in both columns
-        if (oldColumnId !== newColumnId) {
-            // Reorder tasks in old column (fill the gap)
-            await Task.updateMany(
-                { userId: user.userId, columnId: oldColumnId, order: { $gt: task.order } },
-                { $inc: { order: -1 } }
-            );
+        if (oldColumnId === newColumnId && oldOrder === newOrder) {
+            return { task };
         }
 
-        // Reorder tasks in new column (make space)
-        await Task.updateMany(
-            {
-                userId: user.userId,
-                columnId: newColumnId,
-                _id: { $ne: task._id },
-                order: { $gte: newOrder }
-            },
-            { $inc: { order: 1 } }
-        );
+        const operations: any[] = [];
 
-        return { task };
+        if (oldColumnId === newColumnId) {
+            // Moving within the same column
+            if (oldOrder < newOrder) {
+                // Moving down
+                operations.push({
+                    updateMany: {
+                        filter: {
+                            userId: user.userId,
+                            columnId: oldColumnId,
+                            order: { $gt: oldOrder, $lte: newOrder },
+                            _id: { $ne: params.id }
+                        },
+                        update: { $inc: { order: -1 } }
+                    }
+                });
+            } else {
+                // Moving up
+                operations.push({
+                    updateMany: {
+                        filter: {
+                            userId: user.userId,
+                            columnId: oldColumnId,
+                            order: { $gte: newOrder, $lt: oldOrder },
+                            _id: { $ne: params.id }
+                        },
+                        update: { $inc: { order: 1 } }
+                    }
+                });
+            }
+        } else {
+            // Moving to a different column
+            operations.push({
+                updateMany: {
+                    filter: {
+                        userId: user.userId,
+                        columnId: oldColumnId,
+                        order: { $gt: oldOrder },
+                        _id: { $ne: params.id }
+                    },
+                    update: { $inc: { order: -1 } }
+                }
+            });
+            operations.push({
+                updateMany: {
+                    filter: {
+                        userId: user.userId,
+                        columnId: newColumnId,
+                        order: { $gte: newOrder },
+                        _id: { $ne: params.id }
+                    },
+                    update: { $inc: { order: 1 } }
+                }
+            });
+        }
+
+        // Update the task itself
+        operations.push({
+            updateOne: {
+                filter: { _id: params.id, userId: user.userId },
+                update: { $set: { columnId: newColumnId, order: newOrder } }
+            }
+        });
+
+        if (operations.length > 0) {
+            await Task.bulkWrite(operations);
+        }
+
+        const updatedTask = await Task.findById(params.id).select('-__v');
+
+        return { task: updatedTask };
     }, {
         requireAuth: true,
         body: t.Object({
