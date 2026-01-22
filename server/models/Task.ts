@@ -2,6 +2,12 @@ import mongoose, { Schema, Document, Types } from 'mongoose';
 
 export type Priority = 'High' | 'Medium' | 'Low' | 'Completed';
 
+export interface ISubtask {
+    id: string;
+    text: string;
+    completed: boolean;
+}
+
 export interface ITask extends Document {
     userId: Types.ObjectId;
     columnId: Types.ObjectId;
@@ -12,6 +18,8 @@ export interface ITask extends Document {
     priority: Priority;
     isCompleted: boolean;
     order: number;
+    subtasks: ISubtask[];
+    tags: string[];
     createdAt: Date;
     updatedAt: Date;
 }
@@ -58,7 +66,13 @@ const taskSchema = new Schema<ITask>({
     order: {
         type: Number,
         default: 0
-    }
+    },
+    subtasks: [{
+        id: { type: String, required: true },
+        text: { type: String, required: true, maxlength: 200 },
+        completed: { type: Boolean, default: false }
+    }],
+    tags: [{ type: String, trim: true, maxlength: 30 }]
 }, {
     timestamps: true
 });

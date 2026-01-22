@@ -1,5 +1,11 @@
 export type Priority = 'High' | 'Medium' | 'Low' | 'Completed';
 
+export interface Subtask {
+  id: string;
+  text: string;
+  completed: boolean;
+}
+
 export interface Task {
   id: string;
   title: string;
@@ -9,6 +15,8 @@ export interface Task {
   priority: Priority;
   colorClass: string; // Tailwind class for the dot color
   isCompleted?: boolean;
+  subtasks?: Subtask[];
+  tags?: string[];
 }
 
 export interface Column {

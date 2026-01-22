@@ -13,18 +13,16 @@ const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:3000';
 // Default columns for new users
 const DEFAULT_COLUMNS = ['All Tasks', 'Work', 'Personal'];
 
-// Simple password hashing (in production, use bcrypt)
+// Password hashing using Bun.password (bcrypt by default)
 const hashPassword = async (password: string): Promise<string> => {
-    const encoder = new TextEncoder();
-    const data = encoder.encode(password + 'focusflow-salt');
-    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-    const hashArray = Array.from(new Uint8Array(hashBuffer));
-    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    return await Bun.password.hash(password, {
+        algorithm: 'bcrypt',
+        cost: 10  // Work factor (higher = more secure but slower)
+    });
 };
 
 const verifyPassword = async (password: string, hash: string): Promise<boolean> => {
-    const hashed = await hashPassword(password);
-    return hashed === hash;
+    return await Bun.password.verify(password, hash);
 };
 
 export const authRoutes = new Elysia({ prefix: '/auth' })
@@ -322,7 +320,7 @@ export const authRoutes = new Elysia({ prefix: '/auth' })
                 email: user.email
             });
 
-            console.log('✅ Auth Success. User ID:', user._id.toString());
+
 
             // Redirect to frontend with token
             return redirect(`${FRONTEND_URL}?token=${token}`);

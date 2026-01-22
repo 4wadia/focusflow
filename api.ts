@@ -73,6 +73,8 @@ export interface TaskData {
     dueTime?: string;
     date: string;
     priority?: 'High' | 'Medium' | 'Low';
+    subtasks?: Array<{ id: string; text: string; completed: boolean }>;
+    tags?: string[];
 }
 
 export const tasksApi = {
@@ -106,6 +108,13 @@ export const tasksApi = {
     // Toggle task completion
     toggle: (id: string) =>
         apiRequest<{ task: any }>(`/api/tasks/${id}/toggle`, { method: 'PATCH' }),
+
+    // Move task to different column/position
+    move: (id: string, data: { columnId: string; order: number }) =>
+        apiRequest<{ task: any }>(`/api/tasks/${id}/move`, {
+            method: 'PATCH',
+            body: JSON.stringify(data),
+        }),
 };
 
 // ============ COLUMNS API ============

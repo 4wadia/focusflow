@@ -78,7 +78,9 @@ export const taskRoutes = new Elysia({ prefix: '/api/tasks' })
             dueTime: body.dueTime,
             date: body.date,
             priority: body.priority || 'Medium',
-            isCompleted: false
+            isCompleted: false,
+            subtasks: body.subtasks || [],
+            tags: body.tags || []
         });
 
         return { task };
@@ -93,8 +95,15 @@ export const taskRoutes = new Elysia({ prefix: '/api/tasks' })
             priority: t.Optional(t.Union([
                 t.Literal('High'),
                 t.Literal('Medium'),
-                t.Literal('Low')
-            ]))
+                t.Literal('Low'),
+                t.Literal('Completed')
+            ])),
+            subtasks: t.Optional(t.Array(t.Object({
+                id: t.String(),
+                text: t.String(),
+                completed: t.Boolean()
+            }))),
+            tags: t.Optional(t.Array(t.String()))
         })
     })
 
@@ -103,6 +112,36 @@ export const taskRoutes = new Elysia({ prefix: '/api/tasks' })
         if (!user) {
             set.status = 401;
             return { error: 'Unauthorized' };
+        }
+
+        // If updating to High priority, validate the limit
+        if (body.priority === 'High') {
+            // First get the current task to know its date
+            const currentTask = await Task.findOne({
+                _id: params.id,
+                userId: user.userId
+            });
+
+            if (!currentTask) {
+                set.status = 404;
+                return { error: 'Task not found' };
+            }
+
+            // Use the new date if provided, otherwise use current task's date
+            const targetDate = body.date || currentTask.date;
+
+            // Count high priority tasks for that day, excluding the current task
+            const highPriorityCount = await Task.countDocuments({
+                userId: user.userId,
+                date: targetDate,
+                priority: 'High',
+                _id: { $ne: params.id }
+            });
+
+            if (highPriorityCount >= 5) {
+                set.status = 400;
+                return { error: 'Maximum 5 high priority tasks per day' };
+            }
         }
 
         const task = await Task.findOneAndUpdate(
@@ -132,7 +171,13 @@ export const taskRoutes = new Elysia({ prefix: '/api/tasks' })
                 t.Literal('Completed')
             ]),
             isCompleted: t.Boolean(),
-            order: t.Number()
+            order: t.Number(),
+            subtasks: t.Array(t.Object({
+                id: t.String(),
+                text: t.String(),
+                completed: t.Boolean()
+            })),
+            tags: t.Array(t.String())
         }))
     })
 
@@ -178,4 +223,59 @@ export const taskRoutes = new Elysia({ prefix: '/api/tasks' })
         await task.save();
 
         return { task };
-    }, { requireAuth: true });
+    }, { requireAuth: true })
+
+    // Move task to different column/position
+    .patch('/:id/move', async ({ user, params, body, set }: any) => {
+        if (!user) {
+            set.status = 401;
+            return { error: 'Unauthorized' };
+        }
+
+        const task = await Task.findOne({
+            _id: params.id,
+            userId: user.userId
+        });
+
+        if (!task) {
+            set.status = 404;
+            return { error: 'Task not found' };
+        }
+
+        const oldColumnId = task.columnId.toString();
+        const newColumnId = body.columnId;
+        const newOrder = body.order;
+
+        // Update the task's column and order
+        task.columnId = newColumnId;
+        task.order = newOrder;
+        await task.save();
+
+        // If moving to a different column, reorder tasks in both columns
+        if (oldColumnId !== newColumnId) {
+            // Reorder tasks in old column (fill the gap)
+            await Task.updateMany(
+                { userId: user.userId, columnId: oldColumnId, order: { $gt: task.order } },
+                { $inc: { order: -1 } }
+            );
+        }
+
+        // Reorder tasks in new column (make space)
+        await Task.updateMany(
+            {
+                userId: user.userId,
+                columnId: newColumnId,
+                _id: { $ne: task._id },
+                order: { $gte: newOrder }
+            },
+            { $inc: { order: 1 } }
+        );
+
+        return { task };
+    }, {
+        requireAuth: true,
+        body: t.Object({
+            columnId: t.String(),
+            order: t.Number()
+        })
+    });

@@ -21,6 +21,8 @@ interface HeaderProps {
   onFilterPriorityChange?: (priority: string) => void;
   notifications?: Notification[];
   onMarkAllRead?: () => void;
+  isDarkMode?: boolean;
+  onToggleDarkMode?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -39,7 +41,9 @@ export const Header: React.FC<HeaderProps> = ({
   filterPriority = 'All',
   onFilterPriorityChange,
   notifications = [],
-  onMarkAllRead
+  onMarkAllRead,
+  isDarkMode = false,
+  onToggleDarkMode
 }) => {
   const tabs = ['All Tasks', 'Work', 'Personal'];
   const [showNotifications, setShowNotifications] = useState(false);
@@ -78,8 +82,8 @@ export const Header: React.FC<HeaderProps> = ({
                           key={tab}
                           onClick={() => onTabChange(tab)}
                           className={`px-3 py-1.5 rounded-md font-bold text-xs transition-all whitespace-nowrap ${isActive
-                              ? 'bg-white dark:bg-neutral-700 text-primary dark:text-white shadow-sm ring-1 ring-black/5 dark:ring-white/10'
-                              : 'text-text-secondary-light hover:text-text-main-light dark:hover:text-text-main-dark'
+                            ? 'bg-white dark:bg-neutral-700 text-primary dark:text-white shadow-sm ring-1 ring-black/5 dark:ring-white/10'
+                            : 'text-text-secondary-light hover:text-text-main-light dark:hover:text-text-main-dark'
                             }`}
                         >
                           {tab}
@@ -151,8 +155,8 @@ export const Header: React.FC<HeaderProps> = ({
                               key={status}
                               onClick={() => onFilterStatusChange?.(status as any)}
                               className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all border ${filterStatus === status
-                                  ? 'bg-primary text-white border-primary shadow-sm'
-                                  : 'bg-transparent border-border-light dark:border-border-dark text-text-secondary-light hover:border-primary/50'
+                                ? 'bg-primary text-white border-primary shadow-sm'
+                                : 'bg-transparent border-border-light dark:border-border-dark text-text-secondary-light hover:border-primary/50'
                                 }`}
                             >
                               {status}
@@ -170,8 +174,8 @@ export const Header: React.FC<HeaderProps> = ({
                               key={p}
                               onClick={() => onFilterPriorityChange?.(p)}
                               className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all border ${filterPriority === p
-                                  ? 'bg-primary text-white border-primary shadow-sm'
-                                  : 'bg-transparent border-border-light dark:border-border-dark text-text-secondary-light hover:border-primary/50'
+                                ? 'bg-primary text-white border-primary shadow-sm'
+                                : 'bg-transparent border-border-light dark:border-border-dark text-text-secondary-light hover:border-primary/50'
                                 }`}
                             >
                               {p}
@@ -245,6 +249,15 @@ export const Header: React.FC<HeaderProps> = ({
               </>
             )}
           </div>
+
+          {/* Dark Mode Toggle */}
+          <button
+            onClick={onToggleDarkMode}
+            className="flex items-center justify-center size-9 rounded-lg transition-all border bg-surface-light dark:bg-surface-dark border-border-light dark:border-border-dark text-text-secondary-light hover:border-primary hover:text-primary"
+            title={isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+          >
+            <Icon name={isDarkMode ? 'light_mode' : 'dark_mode'} size={20} />
+          </button>
 
           <button
             onClick={onProfileClick}

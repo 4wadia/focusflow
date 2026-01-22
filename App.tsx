@@ -1,4 +1,5 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
+import { DragDropContext, DropResult } from '@hello-pangea/dnd';
 import { Header } from './components/Header';
 import { KanbanColumn } from './components/KanbanColumn';
 import { RightSidebar } from './components/RightSidebar';
@@ -154,6 +155,30 @@ export default function App() {
   const [filterStatus, setFilterStatus] = useState<'All' | 'Pending' | 'Completed'>('All');
   const [filterPriority, setFilterPriority] = useState<string>('All');
 
+  // Dark Mode State
+  const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
+    const saved = localStorage.getItem('focusflow_darkMode');
+    if (saved !== null) {
+      return saved === 'true';
+    }
+    // Default to system preference
+    return window.matchMedia('(prefers-color-scheme: dark)').matches;
+  });
+
+  // Apply dark mode class to document
+  useEffect(() => {
+    if (isDarkMode) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+    localStorage.setItem('focusflow_darkMode', String(isDarkMode));
+  }, [isDarkMode]);
+
+  const handleToggleDarkMode = useCallback(() => {
+    setIsDarkMode(prev => !prev);
+  }, []);
+
   // --- Auth & Data Loading ---
 
   // Check for token in URL (after OAuth redirect) and load user data
@@ -199,6 +224,8 @@ export default function App() {
                   task.priority === 'Medium' ? 'bg-amber-400' :
                     task.priority === 'Low' ? 'bg-blue-400' : 'bg-neutral-400',
                 isCompleted: task.isCompleted,
+                subtasks: task.subtasks || [],
+                tags: task.tags || [],
               })),
             })));
           }
@@ -300,7 +327,7 @@ export default function App() {
     setModalError(null);
   };
 
-  const handleModalSubmit = async (data: { title: string; duration?: string; dueTime?: string; priority?: Priority }) => {
+  const handleModalSubmit = async (data: { title: string; duration?: string; dueTime?: string; priority?: Priority; subtasks?: import('./types').Subtask[]; tags?: string[] }) => {
     // --- Validation Logic for High Priority ---
     if (data.priority === 'High' && (modal.type === 'ADD_TASK' || modal.type === 'EDIT_TASK')) {
       const targetDate = formatDate(selectedDate);
@@ -350,6 +377,8 @@ export default function App() {
           dueTime: data.dueTime,
           date: formatDate(selectedDate),
           priority: apiPriority as 'High' | 'Medium' | 'Low',
+          subtasks: data.subtasks || [],
+          tags: data.tags || [],
         });
 
         const newTask: Task = {
@@ -360,7 +389,9 @@ export default function App() {
           date: createdTask.date,
           priority: createdTask.priority,
           colorClass: getPriorityColor(createdTask.priority),
-          isCompleted: createdTask.isCompleted || false
+          isCompleted: createdTask.isCompleted || false,
+          subtasks: createdTask.subtasks || [],
+          tags: createdTask.tags || []
         };
 
         setColumns(cols => cols.map(col => {
@@ -383,6 +414,8 @@ export default function App() {
           duration: data.duration,
           dueTime: data.dueTime,
           priority: apiPriority as 'High' | 'Medium' | 'Low' | undefined,
+          subtasks: data.subtasks,
+          tags: data.tags,
         });
 
         setColumns(cols => cols.map(col => {
@@ -397,7 +430,9 @@ export default function App() {
                     duration: updatedTask.duration,
                     dueTime: updatedTask.dueTime,
                     priority: updatedTask.priority,
-                    colorClass: getPriorityColor(updatedTask.priority)
+                    colorClass: getPriorityColor(updatedTask.priority),
+                    subtasks: updatedTask.subtasks || [],
+                    tags: updatedTask.tags || []
                   };
                 }
                 return t;
@@ -502,6 +537,68 @@ export default function App() {
       setColumns(cols => cols.filter(c => c.id !== columnId));
     }
   };
+
+  // --- Drag and Drop Handler ---
+  const handleDragEnd = useCallback(async (result: DropResult) => {
+    const { source, destination, draggableId } = result;
+
+    // Dropped outside a valid droppable
+    if (!destination) return;
+
+    // Dropped in the same position
+    if (source.droppableId === destination.droppableId && source.index === destination.index) {
+      return;
+    }
+
+    const sourceColId = source.droppableId;
+    const destColId = destination.droppableId;
+
+    // Create a copy of columns for manipulation
+    const newColumns = [...columns];
+    const sourceCol = newColumns.find(c => c.id === sourceColId);
+    const destCol = newColumns.find(c => c.id === destColId);
+
+    if (!sourceCol || !destCol) return;
+
+    // Remove task from source
+    const [movedTask] = sourceCol.tasks.splice(source.index, 1);
+
+    // Insert task into destination
+    destCol.tasks.splice(destination.index, 0, movedTask);
+
+    // Update local state immediately for responsive UI
+    setColumns(newColumns);
+
+    // Persist to backend
+    try {
+      await tasksApi.move(draggableId, {
+        columnId: destColId,
+        order: destination.index
+      });
+    } catch (error: any) {
+      // Revert on error
+      showToast(error.message || 'Failed to move task', 'error');
+      // Reload data to get correct state
+      const selectedDateStr = formatDate(selectedDate);
+      const { columns: apiColumns } = await columnsApi.getAll({ includeTasks: true, date: selectedDateStr });
+      if (apiColumns && apiColumns.length > 0) {
+        setColumns(apiColumns.map((col: any) => ({
+          id: col._id,
+          title: col.title,
+          tasks: (col.tasks || []).map((task: any) => ({
+            id: task._id,
+            title: task.title,
+            duration: task.duration,
+            dueTime: task.dueTime,
+            date: task.date,
+            priority: task.priority,
+            colorClass: getPriorityColor(task.priority),
+            isCompleted: task.isCompleted,
+          })),
+        })));
+      }
+    }
+  }, [columns, selectedDate, showToast, getPriorityColor]);
 
   // --- Filtering Logic ---
 
@@ -648,23 +745,27 @@ export default function App() {
         onFilterPriorityChange={setFilterPriority}
         notifications={notifications}
         onMarkAllRead={markAllNotificationsRead}
+        isDarkMode={isDarkMode}
+        onToggleDarkMode={handleToggleDarkMode}
       />
 
       {currentView === 'dashboard' ? (
         <div className={`flex flex-grow overflow-hidden relative ${dashboardAnimation}`}>
-          <main className="flex-grow flex gap-4 p-6 overflow-x-auto overflow-y-hidden">
-            {filteredColumns.map(column => (
-              <KanbanColumn
-                key={column.id}
-                column={column}
-                onAddClick={handleOpenAddTask}
-                onTaskClick={handleOpenEditTask}
-                onDeleteTask={handleDeleteTask}
-                onToggleTask={handleToggleTask}
-                onDeleteColumn={handleDeleteColumn}
-              />
-            ))}
-          </main>
+          <DragDropContext onDragEnd={handleDragEnd}>
+            <main className="flex-grow flex gap-4 p-6 overflow-x-auto overflow-y-hidden">
+              {filteredColumns.map(column => (
+                <KanbanColumn
+                  key={column.id}
+                  column={column}
+                  onAddClick={handleOpenAddTask}
+                  onTaskClick={handleOpenEditTask}
+                  onDeleteTask={handleDeleteTask}
+                  onToggleTask={handleToggleTask}
+                  onDeleteColumn={handleDeleteColumn}
+                />
+              ))}
+            </main>
+          </DragDropContext>
           <RightSidebar
             selectedDate={selectedDate}
             onDateSelect={setSelectedDate}
