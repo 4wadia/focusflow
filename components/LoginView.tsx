@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { Logo } from './Logo';
 import { Icon } from './Icon';
+import { API_BASE_URL } from '../api';
 
 interface LoginViewProps {
     onLogin: (email: string, name?: string, avatarUrl?: string) => void;
@@ -8,8 +9,6 @@ interface LoginViewProps {
     showToast: (msg: string, type: 'success' | 'error' | 'info') => void;
 }
 
-// Backend OAuth URL
-const BACKEND_URL = 'http://localhost:3000';
 
 export const LoginView: React.FC<LoginViewProps> = ({ onLogin, onNavigateToSignup, showToast }) => {
     const [step, setStep] = useState<'credentials' | 'verification'>('credentials');
@@ -59,7 +58,7 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLogin, onNavigateToSignu
         showToast('Redirecting to Google...', 'info');
 
         // Redirect to backend OAuth endpoint
-        window.location.href = `${BACKEND_URL}/auth/google`;
+        window.location.href = `${API_BASE_URL}/auth/google`;
     };
 
     // OTP Input Logic

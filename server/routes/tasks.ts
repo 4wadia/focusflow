@@ -6,7 +6,7 @@ export const taskRoutes = new Elysia({ prefix: '/api/tasks' })
     .use(authMiddleware)
 
     // Get all tasks for user (optionally filter by date/column)
-    .get('/', async ({ user, query, set }) => {
+    .get('/', async ({ user, query, set }: any) => {
         if (!user) {
             set.status = 401;
             return { error: 'Unauthorized' };
@@ -30,7 +30,7 @@ export const taskRoutes = new Elysia({ prefix: '/api/tasks' })
     }, { requireAuth: true })
 
     // Get single task
-    .get('/:id', async ({ user, params, set }) => {
+    .get('/:id', async ({ user, params, set }: any) => {
         if (!user) {
             set.status = 401;
             return { error: 'Unauthorized' };
@@ -50,7 +50,7 @@ export const taskRoutes = new Elysia({ prefix: '/api/tasks' })
     }, { requireAuth: true })
 
     // Create task
-    .post('/', async ({ user, body, set }) => {
+    .post('/', async ({ user, body, set }: any) => {
         if (!user) {
             set.status = 401;
             return { error: 'Unauthorized' };
@@ -99,7 +99,7 @@ export const taskRoutes = new Elysia({ prefix: '/api/tasks' })
     })
 
     // Update task
-    .put('/:id', async ({ user, params, body, set }) => {
+    .put('/:id', async ({ user, params, body, set }: any) => {
         if (!user) {
             set.status = 401;
             return { error: 'Unauthorized' };
@@ -137,7 +137,7 @@ export const taskRoutes = new Elysia({ prefix: '/api/tasks' })
     })
 
     // Delete task
-    .delete('/:id', async ({ user, params, set }) => {
+    .delete('/:id', async ({ user, params, set }: any) => {
         if (!user) {
             set.status = 401;
             return { error: 'Unauthorized' };
@@ -157,7 +157,7 @@ export const taskRoutes = new Elysia({ prefix: '/api/tasks' })
     }, { requireAuth: true })
 
     // Toggle task completion
-    .patch('/:id/toggle', async ({ user, params, set }) => {
+    .patch('/:id/toggle', async ({ user, params, set }: any) => {
         if (!user) {
             set.status = 401;
             return { error: 'Unauthorized' };

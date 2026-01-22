@@ -25,7 +25,7 @@ export const CalendarWidget: React.FC<CalendarWidgetProps> = ({ selectedDate, on
 
   // Helper to get days in month
   const getDaysInMonth = (y: number, m: number) => new Date(y, m + 1, 0).getDate();
-  
+
   // Helper to get day of week of first day (0=Sun, 1=Mon, ..., 6=Sat)
   // Since our array starts at Sunday (index 0), we can use getDay() directly.
   const getFirstDayOfMonth = (y: number, m: number) => {
@@ -34,7 +34,7 @@ export const CalendarWidget: React.FC<CalendarWidgetProps> = ({ selectedDate, on
 
   const daysInMonth = getDaysInMonth(year, month);
   const startDay = getFirstDayOfMonth(year, month);
-  
+
   const handlePrevMonth = () => {
     setViewDate(new Date(year, month - 1, 1));
   };
@@ -83,17 +83,17 @@ export const CalendarWidget: React.FC<CalendarWidgetProps> = ({ selectedDate, on
           </button>
         </div>
       </div>
-      
+
       <div className="grid grid-cols-7 gap-2 text-xs font-bold text-text-secondary-light mb-2">
         {daysOfWeek.map((d, i) => (
-            <div key={i} className={`text-center py-1 ${i === 0 ? 'text-red-500' : ''}`}>
-                {d}
-            </div>
+          <div key={i} className={`text-center py-1 ${i === 0 ? 'text-red-500' : ''}`}>
+            {d}
+          </div>
         ))}
       </div>
-      
+
       <div className="grid grid-cols-7 gap-2 text-center">
-        {grid.map((cell, index) => {
+        {grid.map((cell) => {
           if (!cell.day) {
             return <div key={cell.key} className="aspect-square"></div>;
           }
@@ -109,16 +109,16 @@ export const CalendarWidget: React.FC<CalendarWidgetProps> = ({ selectedDate, on
           const today = isToday(cell.day);
 
           let className = "aspect-square flex flex-col items-center justify-center text-sm font-medium rounded-lg cursor-pointer transition-all relative ";
-          
+
           if (selected) {
             // Selected state overrides everything
             className += "bg-primary text-white shadow-lg shadow-primary/20 transform scale-105 font-bold";
           } else {
             // Base text color
             if (isSunday) {
-                className += "text-red-500 ";
+              className += "text-red-500 ";
             } else {
-                className += "text-text-main-light dark:text-text-main-dark ";
+              className += "text-text-main-light dark:text-text-main-dark ";
             }
 
             // Hover state
@@ -126,23 +126,23 @@ export const CalendarWidget: React.FC<CalendarWidgetProps> = ({ selectedDate, on
 
             // Today state
             if (today) {
-                className += "bg-primary/5 border-2 border-primary/20 font-bold ";
+              className += "bg-primary/5 border-2 border-primary/20 font-bold ";
             }
 
             // Task state (if not selected)
             if (hasActiveTask) {
-                className += "bg-neutral-50 dark:bg-neutral-800/50 ";
+              className += "bg-neutral-50 dark:bg-neutral-800/50 ";
             }
           }
 
           return (
-            <div 
-              key={cell.key} 
+            <div
+              key={cell.key}
               className={className}
               onClick={() => onDateSelect(new Date(year, month, cell.day))}
             >
               <span>{cell.day}</span>
-              
+
               {/* Task Indicator Dot */}
               {hasActiveTask && (
                 <span className={`absolute bottom-1.5 left-1/2 -translate-x-1/2 size-1 rounded-full ${selected ? 'bg-white' : 'bg-primary'}`}></span>

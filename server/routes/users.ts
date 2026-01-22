@@ -6,7 +6,7 @@ export const userRoutes = new Elysia({ prefix: '/api/users' })
     .use(authMiddleware)
 
     // Get current user profile
-    .get('/profile', async ({ user, set }) => {
+    .get('/profile', async ({ user, set }: any) => {
         if (!user) {
             set.status = 401;
             return { error: 'Unauthorized' };
@@ -23,7 +23,7 @@ export const userRoutes = new Elysia({ prefix: '/api/users' })
     }, { requireAuth: true })
 
     // Update user profile
-    .put('/profile', async ({ user, body, set }) => {
+    .put('/profile', async ({ user, body, set }: any) => {
         if (!user) {
             set.status = 401;
             return { error: 'Unauthorized' };
@@ -55,7 +55,7 @@ export const userRoutes = new Elysia({ prefix: '/api/users' })
     })
 
     // Get user stats
-    .get('/stats', async ({ user, set }) => {
+    .get('/stats', async ({ user, set }: any) => {
         if (!user) {
             set.status = 401;
             return { error: 'Unauthorized' };

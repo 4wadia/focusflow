@@ -8,7 +8,8 @@
     "dev:server": "bun run --watch server/index.ts",
     "dev:all": "bun run dev & bun run dev:server",
     "build": "bun run tsc && bun run vite build",
-    "preview": "bun run vite preview"
+    "preview": "bun run vite preview",
+    "start": "bun run server/index.ts"
   },
   "dependencies": {
     "@elysiajs/cors": "^1.1.1",

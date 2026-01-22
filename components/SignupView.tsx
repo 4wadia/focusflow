@@ -1,14 +1,13 @@
 import React, { useState } from 'react';
 import { Logo } from './Logo';
 import { Icon } from './Icon';
+import { API_BASE_URL } from '../api';
 
 interface SignupViewProps {
     onSignup: (name: string, email: string, avatarUrl?: string) => void;
     onNavigateToLogin: () => void;
 }
 
-// Backend OAuth URL
-const BACKEND_URL = 'http://localhost:3000';
 
 export const SignupView: React.FC<SignupViewProps> = ({ onSignup, onNavigateToLogin }) => {
     const [name, setName] = useState('');
@@ -30,7 +29,7 @@ export const SignupView: React.FC<SignupViewProps> = ({ onSignup, onNavigateToLo
     const handleGoogleSignup = () => {
         setIsLoading(true);
         // Redirect to backend OAuth endpoint (same endpoint for login/signup)
-        window.location.href = `${BACKEND_URL}/auth/google`;
+        window.location.href = `${API_BASE_URL}/auth/google`;
     };
 
     return (

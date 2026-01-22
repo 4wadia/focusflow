@@ -6,7 +6,7 @@ export const columnRoutes = new Elysia({ prefix: '/api/columns' })
     .use(authMiddleware)
 
     // Get all columns with their tasks
-    .get('/', async ({ user, query, set }) => {
+    .get('/', async ({ user, query, set }: any) => {
         if (!user) {
             set.status = 401;
             return { error: 'Unauthorized' };
@@ -47,7 +47,7 @@ export const columnRoutes = new Elysia({ prefix: '/api/columns' })
     }, { requireAuth: true })
 
     // Get single column
-    .get('/:id', async ({ user, params, set }) => {
+    .get('/:id', async ({ user, params, set }: any) => {
         if (!user) {
             set.status = 401;
             return { error: 'Unauthorized' };
@@ -67,7 +67,7 @@ export const columnRoutes = new Elysia({ prefix: '/api/columns' })
     }, { requireAuth: true })
 
     // Create column
-    .post('/', async ({ user, body, set }) => {
+    .post('/', async ({ user, body, set }: any) => {
         if (!user) {
             set.status = 401;
             return { error: 'Unauthorized' };
@@ -92,7 +92,7 @@ export const columnRoutes = new Elysia({ prefix: '/api/columns' })
     })
 
     // Update column
-    .put('/:id', async ({ user, params, body, set }) => {
+    .put('/:id', async ({ user, params, body, set }: any) => {
         if (!user) {
             set.status = 401;
             return { error: 'Unauthorized' };
@@ -119,7 +119,7 @@ export const columnRoutes = new Elysia({ prefix: '/api/columns' })
     })
 
     // Delete column (and all its tasks)
-    .delete('/:id', async ({ user, params, set }) => {
+    .delete('/:id', async ({ user, params, set }: any) => {
         if (!user) {
             set.status = 401;
             return { error: 'Unauthorized' };
