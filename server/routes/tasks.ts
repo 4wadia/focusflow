@@ -116,19 +116,21 @@ export const taskRoutes = new Elysia({ prefix: '/api/tasks' })
 
         // If updating to High priority, validate the limit
         if (body.priority === 'High') {
-            // First get the current task to know its date
-            const currentTask = await Task.findOne({
-                _id: params.id,
-                userId: user.userId
-            });
+            let targetDate = body.date;
 
-            if (!currentTask) {
-                set.status = 404;
-                return { error: 'Task not found' };
+            // If date is not provided in update, we need to fetch the task to get its current date
+            if (!targetDate) {
+                const currentTask = await Task.findOne({
+                    _id: params.id,
+                    userId: user.userId
+                });
+
+                if (!currentTask) {
+                    set.status = 404;
+                    return { error: 'Task not found' };
+                }
+                targetDate = currentTask.date;
             }
-
-            // Use the new date if provided, otherwise use current task's date
-            const targetDate = body.date || currentTask.date;
 
             // Count high priority tasks for that day, excluding the current task
             const highPriorityCount = await Task.countDocuments({
