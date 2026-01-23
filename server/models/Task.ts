@@ -78,7 +78,7 @@ const taskSchema = new Schema<ITask>({
 });
 
 // Compound index for efficient queries
-taskSchema.index({ userId: 1, date: 1 });
+taskSchema.index({ userId: 1, date: 1, priority: 1 });
 taskSchema.index({ userId: 1, columnId: 1 });
 
 export const Task = mongoose.model<ITask>('Task', taskSchema);
