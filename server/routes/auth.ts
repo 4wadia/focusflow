@@ -67,7 +67,9 @@ export const authRoutes = new Elysia({ prefix: '/auth' })
         );
 
         // Send verification email
-        await sendVerificationEmail(email, name, verificationToken);
+        sendVerificationEmail(email, name, verificationToken).catch(err => {
+            console.error('Failed to send verification email:', err);
+        });
 
         return {
             message: 'Account created! Please check your email to verify your account.',
