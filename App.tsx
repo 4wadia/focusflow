@@ -9,7 +9,7 @@ import { SignupView } from './components/SignupView';
 import { LoginView } from './components/LoginView';
 import { Toast, ToastType } from './components/Toast';
 import { Column, Task, ModalState, Priority, User, View } from './types';
-import { tasksApi, columnsApi, setToken, isAuthenticated, authApi } from './api';
+import { tasksApi, columnsApi, setToken, isAuthenticated, authApi, userApi } from './api';
 
 const formatDate = (date: Date) => {
   const year = date.getFullYear();
@@ -176,7 +176,18 @@ export default function App() {
   }, [isDarkMode]);
 
   const handleToggleDarkMode = useCallback(() => {
-    setIsDarkMode(prev => !prev);
+    setIsDarkMode(prev => {
+      const newIsDarkMode = !prev;
+      // If user is logged in, save preference to their profile
+      if (isAuthenticated()) {
+        userApi.updateProfile({ preferences: { darkMode: newIsDarkMode } })
+          .catch(err => {
+            console.error("Failed to save dark mode preference:", err);
+            // Optional: show a toast to the user
+          });
+      }
+      return newIsDarkMode;
+    });
   }, []);
 
   // --- Auth & Data Loading ---
@@ -204,6 +215,11 @@ export default function App() {
             avatarUrl: apiUser.avatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(apiUser.name)}&background=random`,
             preferences: apiUser.preferences,
           });
+
+          // Set theme based on user preference
+          if (apiUser.preferences?.darkMode) {
+            setIsDarkMode(apiUser.preferences.darkMode);
+          }
 
           // Load columns with tasks
           const selectedDateStr = formatDate(selectedDate);
