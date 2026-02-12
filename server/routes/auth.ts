@@ -310,10 +310,12 @@ export const authRoutes = new Elysia({ prefix: '/auth' })
                     );
                 }
             } else {
-                // Update existing user info
-                user.name = googleUser.name;
-                user.avatarUrl = googleUser.picture;
-                await user.save();
+                // Update existing user info only if changed
+                if (user.name !== googleUser.name || user.avatarUrl !== googleUser.picture) {
+                    user.name = googleUser.name;
+                    user.avatarUrl = googleUser.picture;
+                    await user.save();
+                }
             }
 
             // Generate JWT
