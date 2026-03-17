@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { User, Task } from '../types';
 import { Icon } from './Icon';
 import { userApi } from '../api';
@@ -16,7 +16,12 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ user, onUpdateUser, on
   const [formData, setFormData] = useState(user);
   const [isSaving, setIsSaving] = useState(false);
 
-  const currentIsDarkMode = formData.preferences?.darkMode ?? document.documentElement.classList.contains('dark');
+  useEffect(() => {
+    setFormData(user);
+    if (user.preferences?.darkMode !== undefined) {
+      setIsDark(user.preferences.darkMode);
+    }
+  }, [user]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -42,15 +47,11 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ user, onUpdateUser, on
   };
 
   const handleToggle = async (key: 'emailNotifications' | 'pushNotifications' | 'darkMode') => {
-    const currentPreferences = formData.preferences || {
-      darkMode: document.documentElement.classList.contains('dark'),
-      emailNotifications: true,
-      pushNotifications: true
-    };
+    if (!formData.preferences) return;
 
     const newPreferences = {
-      ...currentPreferences,
-      [key]: !currentPreferences[key]
+      ...formData.preferences,
+      [key]: !((formData.preferences as any)[key])
     };
 
     setFormData(prev => ({ ...prev, preferences: newPreferences }));
@@ -310,13 +311,9 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ user, onUpdateUser, on
                   </div>
                   <button
                     onClick={toggleTheme}
-                    disabled={isSaving}
                     className={`w-12 h-6 rounded-full transition-colors relative ${isDark ? 'bg-primary' : 'bg-neutral-300 dark:bg-neutral-600'} `}
                   >
                     <div className={`absolute top-1 size-4 bg-white rounded-full transition-transform ${isDark ? 'left-7' : 'left-1'} `}></div>
-                    className={`w-12 h-6 rounded-full transition-colors relative ${currentIsDarkMode ? 'bg-primary' : 'bg-neutral-300 dark:bg-neutral-600'} `}
-                  >
-                    <div className={`absolute top-1 size-4 bg-white rounded-full transition-transform ${currentIsDarkMode ? 'left-7' : 'left-1'} `}></div>
                   </button>
                 </div>
 

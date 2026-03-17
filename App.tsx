@@ -183,6 +183,21 @@ export default function App() {
   }, [user?.preferences?.darkMode]);
 
   const handleToggleDarkMode = useCallback(() => {
+    setIsDarkMode(prev => {
+      const newIsDarkMode = !prev;
+      // If user is logged in, save preference to their profile
+      if (isAuthenticated()) {
+        userApi.updateProfile({ preferences: { darkMode: newIsDarkMode } })
+          .then(({ user: updatedUser }) => {
+            setUser(updatedUser);
+          })
+          .catch(err => {
+            console.error("Failed to save dark mode preference:", err);
+          });
+      }
+      return newIsDarkMode;
+    });
+  }, []);
     const newIsDarkMode = !isDarkMode;
     setIsDarkMode(newIsDarkMode);
 
