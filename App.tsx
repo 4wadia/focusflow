@@ -680,8 +680,20 @@ export default function App() {
     return cols;
   }, [columns, activeTab, searchQuery, selectedDateStr, filterStatus, filterPriority]);
 
-  const totalPending = columns.reduce((acc, col) => acc + col.tasks.filter(t => !t.isCompleted).length, 0);
-  const totalCompleted = columns.reduce((acc, col) => acc + col.tasks.filter(t => t.isCompleted).length, 0);
+  const { totalPending, totalCompleted } = useMemo(() => {
+    let pending = 0;
+    let completed = 0;
+    for (const col of columns) {
+      for (const task of col.tasks) {
+        if (task.isCompleted) {
+          completed++;
+        } else {
+          pending++;
+        }
+      }
+    }
+    return { totalPending: pending, totalCompleted: completed };
+  }, [columns]);
 
   // Get current editing task if applicable
   const editingTask = useMemo(() => {
