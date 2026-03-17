@@ -14,16 +14,9 @@ interface ProfileViewProps {
 
 export const ProfileView: React.FC<ProfileViewProps> = ({ user, onUpdateUser, onBack, onLogout, completedCount, completedTasks }) => {
   const [formData, setFormData] = useState(user);
-  const [isDark, setIsDark] = useState(document.documentElement.classList.contains('dark'));
   const [isSaving, setIsSaving] = useState(false);
 
-  // Sync form data and dark mode state when user prop changes
-  React.useEffect(() => {
-    setFormData(user);
-    if (user.preferences) {
-      setIsDark(user.preferences.darkMode);
-    }
-  }, [user]);
+  const currentIsDarkMode = formData.preferences?.darkMode ?? document.documentElement.classList.contains('dark');
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -48,20 +41,33 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ user, onUpdateUser, on
     }
   };
 
-  const handleToggle = async (key: 'emailNotifications' | 'pushNotifications') => {
-    if (!formData.preferences) return;
+  const handleToggle = async (key: 'emailNotifications' | 'pushNotifications' | 'darkMode') => {
+    const currentPreferences = formData.preferences || {
+      darkMode: document.documentElement.classList.contains('dark'),
+      emailNotifications: true,
+      pushNotifications: true
+    };
 
     const newPreferences = {
-      ...formData.preferences,
-      [key]: !formData.preferences[key]
+      ...currentPreferences,
+      [key]: !currentPreferences[key]
     };
 
     setFormData(prev => ({ ...prev, preferences: newPreferences }));
 
+    // For darkMode, update DOM immediately for instant feedback
+    if (key === 'darkMode') {
+      if (newPreferences.darkMode) {
+        document.documentElement.classList.add('dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+      }
+    }
+
     // Auto-save for toggles
     try {
       setIsSaving(true);
-      const { user: updatedUser } = await userApi.updateProfile({ // Note: The backend accepts partial preferences, but sending full object is safer for now or construct partial.
+      const { user: updatedUser } = await userApi.updateProfile({
         preferences: newPreferences
       });
       onUpdateUser(updatedUser);
@@ -70,8 +76,17 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ user, onUpdateUser, on
       // Revert on error
       setFormData(prev => ({
         ...prev,
-        preferences: { ...prev.preferences!, [key]: !newPreferences[key] }
+        preferences: currentPreferences
       }));
+
+      // Revert DOM change if it was darkMode
+      if (key === 'darkMode') {
+        if (currentPreferences.darkMode) {
+          document.documentElement.classList.add('dark');
+        } else {
+          document.documentElement.classList.remove('dark');
+        }
+      }
     } finally {
       setIsSaving(false);
     }
@@ -120,6 +135,8 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ user, onUpdateUser, on
     } finally {
       setIsSaving(false);
     }
+  const toggleTheme = () => {
+    handleToggle('darkMode');
   };
 
   return (
@@ -297,6 +314,9 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ user, onUpdateUser, on
                     className={`w-12 h-6 rounded-full transition-colors relative ${isDark ? 'bg-primary' : 'bg-neutral-300 dark:bg-neutral-600'} `}
                   >
                     <div className={`absolute top-1 size-4 bg-white rounded-full transition-transform ${isDark ? 'left-7' : 'left-1'} `}></div>
+                    className={`w-12 h-6 rounded-full transition-colors relative ${currentIsDarkMode ? 'bg-primary' : 'bg-neutral-300 dark:bg-neutral-600'} `}
+                  >
+                    <div className={`absolute top-1 size-4 bg-white rounded-full transition-transform ${currentIsDarkMode ? 'left-7' : 'left-1'} `}></div>
                   </button>
                 </div>
 
