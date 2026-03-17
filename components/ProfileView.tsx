@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { User, Task } from '../types';
 import { Icon } from './Icon';
 import { userApi } from '../api';
@@ -16,6 +16,13 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ user, onUpdateUser, on
   const [formData, setFormData] = useState(user);
   const [isDark, setIsDark] = useState(document.documentElement.classList.contains('dark'));
   const [isSaving, setIsSaving] = useState(false);
+
+  useEffect(() => {
+    setFormData(user);
+    if (user.preferences?.darkMode !== undefined) {
+      setIsDark(user.preferences.darkMode);
+    }
+  }, [user]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -40,12 +47,12 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ user, onUpdateUser, on
     }
   };
 
-  const handleToggle = async (key: 'emailNotifications' | 'pushNotifications') => {
+  const handleToggle = async (key: 'emailNotifications' | 'pushNotifications' | 'darkMode') => {
     if (!formData.preferences) return;
 
     const newPreferences = {
       ...formData.preferences,
-      [key]: !formData.preferences[key]
+      [key]: !((formData.preferences as any)[key])
     };
 
     setFormData(prev => ({ ...prev, preferences: newPreferences }));
@@ -71,15 +78,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ user, onUpdateUser, on
 
 
   const toggleTheme = () => {
-    const html = document.documentElement;
-    if (html.classList.contains('dark')) {
-      html.classList.remove('dark');
-      setIsDark(false);
-    } else {
-      html.classList.add('dark');
-      setIsDark(true);
-    }
-    // TODO: Persist theme preference if desired, similar to notifications
+    handleToggle('darkMode');
   };
 
   return (
@@ -166,7 +165,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ user, onUpdateUser, on
                   completedTasks.map((task) => (
                     <div key={task.id} className="p-3 bg-background-light dark:bg-background-dark rounded-xl flex items-center justify-between group">
                       <div className="flex items-center gap-3">
-                        <div className={`size - 2 rounded - full ${task.priority === 'High' ? 'bg-red-500' : task.priority === 'Medium' ? 'bg-amber-400' : 'bg-blue-400'} `}></div>
+                        <div className={`size-2 rounded-full ${task.priority === 'High' ? 'bg-red-500' : task.priority === 'Medium' ? 'bg-amber-400' : 'bg-blue-400'} `}></div>
                         <div>
                           <p className="text-sm font-bold line-through text-text-secondary-light">{task.title}</p>
                           <p className="text-[10px] text-text-secondary-light">{task.date}</p>
@@ -253,9 +252,9 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ user, onUpdateUser, on
                   </div>
                   <button
                     onClick={toggleTheme}
-                    className={`w - 12 h - 6 rounded - full transition - colors relative ${isDark ? 'bg-primary' : 'bg-neutral-300 dark:bg-neutral-600'} `}
+                    className={`w-12 h-6 rounded-full transition-colors relative ${isDark ? 'bg-primary' : 'bg-neutral-300 dark:bg-neutral-600'} `}
                   >
-                    <div className={`absolute top - 1 size - 4 bg - white rounded - full transition - transform ${isDark ? 'left-7' : 'left-1'} `}></div>
+                    <div className={`absolute top-1 size-4 bg-white rounded-full transition-transform ${isDark ? 'left-7' : 'left-1'} `}></div>
                   </button>
                 </div>
 
@@ -273,9 +272,9 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ user, onUpdateUser, on
                   <button
                     onClick={() => handleToggle('emailNotifications')}
                     disabled={isSaving}
-                    className={`w - 12 h - 6 rounded - full transition - colors relative ${formData.preferences?.emailNotifications ? 'bg-primary' : 'bg-neutral-300 dark:bg-neutral-600'} `}
+                    className={`w-12 h-6 rounded-full transition-colors relative ${formData.preferences?.emailNotifications ? 'bg-primary' : 'bg-neutral-300 dark:bg-neutral-600'} `}
                   >
-                    <div className={`absolute top - 1 size - 4 bg - white rounded - full transition - transform ${formData.preferences?.emailNotifications ? 'left-7' : 'left-1'} `}></div>
+                    <div className={`absolute top-1 size-4 bg-white rounded-full transition-transform ${formData.preferences?.emailNotifications ? 'left-7' : 'left-1'} `}></div>
                   </button>
                 </div>
 
@@ -292,9 +291,9 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ user, onUpdateUser, on
                   <button
                     onClick={() => handleToggle('pushNotifications')}
                     disabled={isSaving}
-                    className={`w - 12 h - 6 rounded - full transition - colors relative ${formData.preferences?.pushNotifications ? 'bg-primary' : 'bg-neutral-300 dark:bg-neutral-600'} `}
+                    className={`w-12 h-6 rounded-full transition-colors relative ${formData.preferences?.pushNotifications ? 'bg-primary' : 'bg-neutral-300 dark:bg-neutral-600'} `}
                   >
-                    <div className={`absolute top - 1 size - 4 bg - white rounded - full transition - transform ${formData.preferences?.pushNotifications ? 'left-7' : 'left-1'} `}></div>
+                    <div className={`absolute top-1 size-4 bg-white rounded-full transition-transform ${formData.preferences?.pushNotifications ? 'left-7' : 'left-1'} `}></div>
                   </button>
                 </div>
 

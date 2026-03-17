@@ -181,9 +181,11 @@ export default function App() {
       // If user is logged in, save preference to their profile
       if (isAuthenticated()) {
         userApi.updateProfile({ preferences: { darkMode: newIsDarkMode } })
+          .then(({ user: updatedUser }) => {
+            setUser(updatedUser);
+          })
           .catch(err => {
             console.error("Failed to save dark mode preference:", err);
-            // Optional: show a toast to the user
           });
       }
       return newIsDarkMode;
@@ -791,7 +793,12 @@ export default function App() {
       ) : (
         <ProfileView
           user={user}
-          onUpdateUser={setUser}
+          onUpdateUser={(updatedUser) => {
+            setUser(updatedUser);
+            if (updatedUser.preferences?.darkMode !== undefined) {
+              setIsDarkMode(updatedUser.preferences.darkMode);
+            }
+          }}
           onBack={() => changeView('dashboard')}
           onLogout={handleLogout}
           completedCount={totalCompleted}
