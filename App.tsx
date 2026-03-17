@@ -791,7 +791,12 @@ export default function App() {
       ) : (
         <ProfileView
           user={user}
-          onUpdateUser={setUser}
+          onUpdateUser={(updatedUser) => {
+            setUser(updatedUser);
+            if (updatedUser.preferences?.darkMode !== undefined) {
+              setIsDarkMode(updatedUser.preferences.darkMode);
+            }
+          }}
           onBack={() => changeView('dashboard')}
           onLogout={handleLogout}
           completedCount={totalCompleted}
