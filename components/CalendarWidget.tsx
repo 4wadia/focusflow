@@ -43,9 +43,16 @@ export const CalendarWidget: React.FC<CalendarWidgetProps> = ({ selectedDate, on
     setViewDate(new Date(year, month + 1, 1));
   };
 
+  // Pre-calculate today's date parts outside the grid loop
+  const todayObj = new Date();
+  const todayDate = todayObj.getDate();
+  const todayMonth = todayObj.getMonth();
+  const todayYear = todayObj.getFullYear();
+
+  const isThisMonth = month === todayMonth && year === todayYear;
+
   const isToday = (d: number) => {
-    const today = new Date();
-    return d === today.getDate() && month === today.getMonth() && year === today.getFullYear();
+    return isThisMonth && d === todayDate;
   };
 
   const isSelected = (d: number) => {
@@ -98,11 +105,9 @@ export const CalendarWidget: React.FC<CalendarWidgetProps> = ({ selectedDate, on
             return <div key={cell.key} className="aspect-square"></div>;
           }
 
-          // Calculate column index to identify Sundays (index % 7 === 0)
-          // We must account for the empty slots at the start to find the true column of the specific day
-          // Actually, simply relying on the day of week logic:
-          const dateObj = new Date(year, month, cell.day);
-          const isSunday = dateObj.getDay() === 0;
+          // Calculate column index to identify Sundays
+          // 0 is Sunday, 1 is Monday, etc. startDay is the day of week for the 1st
+          const isSunday = (startDay + cell.day - 1) % 7 === 0;
 
           const hasActiveTask = hasTask(cell.day);
           const selected = isSelected(cell.day);
