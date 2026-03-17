@@ -17,6 +17,14 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ user, onUpdateUser, on
   const [isDark, setIsDark] = useState(document.documentElement.classList.contains('dark'));
   const [isSaving, setIsSaving] = useState(false);
 
+  // Sync form data and dark mode state when user prop changes
+  React.useEffect(() => {
+    setFormData(user);
+    if (user.preferences) {
+      setIsDark(user.preferences.darkMode);
+    }
+  }, [user]);
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
@@ -70,16 +78,48 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ user, onUpdateUser, on
   };
 
 
-  const toggleTheme = () => {
+  const toggleTheme = async () => {
+    const newIsDark = !isDark;
+    setIsDark(newIsDark);
+
     const html = document.documentElement;
-    if (html.classList.contains('dark')) {
-      html.classList.remove('dark');
-      setIsDark(false);
-    } else {
+    if (newIsDark) {
       html.classList.add('dark');
-      setIsDark(true);
+    } else {
+      html.classList.remove('dark');
     }
-    // TODO: Persist theme preference if desired, similar to notifications
+
+    if (!formData.preferences) return;
+
+    const newPreferences = {
+      ...formData.preferences,
+      darkMode: newIsDark
+    };
+
+    setFormData(prev => ({ ...prev, preferences: newPreferences }));
+
+    try {
+      setIsSaving(true);
+      const { user: updatedUser } = await userApi.updateProfile({
+        preferences: newPreferences
+      });
+      onUpdateUser(updatedUser);
+    } catch (error) {
+      console.error("Failed to update theme preference", error);
+      // Revert on error
+      setIsDark(!newIsDark);
+      if (!newIsDark) {
+        html.classList.add('dark');
+      } else {
+        html.classList.remove('dark');
+      }
+      setFormData(prev => ({
+        ...prev,
+        preferences: { ...prev.preferences!, darkMode: !newIsDark }
+      }));
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -166,7 +206,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ user, onUpdateUser, on
                   completedTasks.map((task) => (
                     <div key={task.id} className="p-3 bg-background-light dark:bg-background-dark rounded-xl flex items-center justify-between group">
                       <div className="flex items-center gap-3">
-                        <div className={`size - 2 rounded - full ${task.priority === 'High' ? 'bg-red-500' : task.priority === 'Medium' ? 'bg-amber-400' : 'bg-blue-400'} `}></div>
+                        <div className={`size-2 rounded-full ${task.priority === 'High' ? 'bg-red-500' : task.priority === 'Medium' ? 'bg-amber-400' : 'bg-blue-400'} `}></div>
                         <div>
                           <p className="text-sm font-bold line-through text-text-secondary-light">{task.title}</p>
                           <p className="text-[10px] text-text-secondary-light">{task.date}</p>
@@ -253,9 +293,10 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ user, onUpdateUser, on
                   </div>
                   <button
                     onClick={toggleTheme}
-                    className={`w - 12 h - 6 rounded - full transition - colors relative ${isDark ? 'bg-primary' : 'bg-neutral-300 dark:bg-neutral-600'} `}
+                    disabled={isSaving}
+                    className={`w-12 h-6 rounded-full transition-colors relative ${isDark ? 'bg-primary' : 'bg-neutral-300 dark:bg-neutral-600'} `}
                   >
-                    <div className={`absolute top - 1 size - 4 bg - white rounded - full transition - transform ${isDark ? 'left-7' : 'left-1'} `}></div>
+                    <div className={`absolute top-1 size-4 bg-white rounded-full transition-transform ${isDark ? 'left-7' : 'left-1'} `}></div>
                   </button>
                 </div>
 
@@ -273,9 +314,9 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ user, onUpdateUser, on
                   <button
                     onClick={() => handleToggle('emailNotifications')}
                     disabled={isSaving}
-                    className={`w - 12 h - 6 rounded - full transition - colors relative ${formData.preferences?.emailNotifications ? 'bg-primary' : 'bg-neutral-300 dark:bg-neutral-600'} `}
+                    className={`w-12 h-6 rounded-full transition-colors relative ${formData.preferences?.emailNotifications ? 'bg-primary' : 'bg-neutral-300 dark:bg-neutral-600'} `}
                   >
-                    <div className={`absolute top - 1 size - 4 bg - white rounded - full transition - transform ${formData.preferences?.emailNotifications ? 'left-7' : 'left-1'} `}></div>
+                    <div className={`absolute top-1 size-4 bg-white rounded-full transition-transform ${formData.preferences?.emailNotifications ? 'left-7' : 'left-1'} `}></div>
                   </button>
                 </div>
 
@@ -292,9 +333,9 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ user, onUpdateUser, on
                   <button
                     onClick={() => handleToggle('pushNotifications')}
                     disabled={isSaving}
-                    className={`w - 12 h - 6 rounded - full transition - colors relative ${formData.preferences?.pushNotifications ? 'bg-primary' : 'bg-neutral-300 dark:bg-neutral-600'} `}
+                    className={`w-12 h-6 rounded-full transition-colors relative ${formData.preferences?.pushNotifications ? 'bg-primary' : 'bg-neutral-300 dark:bg-neutral-600'} `}
                   >
-                    <div className={`absolute top - 1 size - 4 bg - white rounded - full transition - transform ${formData.preferences?.pushNotifications ? 'left-7' : 'left-1'} `}></div>
+                    <div className={`absolute top-1 size-4 bg-white rounded-full transition-transform ${formData.preferences?.pushNotifications ? 'left-7' : 'left-1'} `}></div>
                   </button>
                 </div>
 
