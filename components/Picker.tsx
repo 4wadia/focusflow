@@ -16,11 +16,7 @@ export const Picker: React.FC<PickerProps> = ({ items, value, onChange, label })
   const COPIES = 21; 
 
   const extendedItems = useMemo(() => {
-    let res: (string | number)[] = [];
-    for (let i = 0; i < COPIES; i++) {
-      res = res.concat(items);
-    }
-    return res;
+    return Array.from({ length: COPIES }).flatMap(() => items);
   }, [items]);
 
   const itemLength = items.length;
