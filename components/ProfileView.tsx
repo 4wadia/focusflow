@@ -93,6 +93,48 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ user, onUpdateUser, on
   };
 
 
+  const toggleTheme = async () => {
+    const newIsDark = !isDark;
+    setIsDark(newIsDark);
+
+    const html = document.documentElement;
+    if (newIsDark) {
+      html.classList.add('dark');
+    } else {
+      html.classList.remove('dark');
+    }
+
+    if (!formData.preferences) return;
+
+    const newPreferences = {
+      ...formData.preferences,
+      darkMode: newIsDark
+    };
+
+    setFormData(prev => ({ ...prev, preferences: newPreferences }));
+
+    try {
+      setIsSaving(true);
+      const { user: updatedUser } = await userApi.updateProfile({
+        preferences: newPreferences
+      });
+      onUpdateUser(updatedUser);
+    } catch (error) {
+      console.error("Failed to update theme preference", error);
+      // Revert on error
+      setIsDark(!newIsDark);
+      if (!newIsDark) {
+        html.classList.add('dark');
+      } else {
+        html.classList.remove('dark');
+      }
+      setFormData(prev => ({
+        ...prev,
+        preferences: { ...prev.preferences!, darkMode: !newIsDark }
+      }));
+    } finally {
+      setIsSaving(false);
+    }
   const toggleTheme = () => {
     handleToggle('darkMode');
   };
@@ -268,6 +310,10 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ user, onUpdateUser, on
                   </div>
                   <button
                     onClick={toggleTheme}
+                    disabled={isSaving}
+                    className={`w-12 h-6 rounded-full transition-colors relative ${isDark ? 'bg-primary' : 'bg-neutral-300 dark:bg-neutral-600'} `}
+                  >
+                    <div className={`absolute top-1 size-4 bg-white rounded-full transition-transform ${isDark ? 'left-7' : 'left-1'} `}></div>
                     className={`w-12 h-6 rounded-full transition-colors relative ${currentIsDarkMode ? 'bg-primary' : 'bg-neutral-300 dark:bg-neutral-600'} `}
                   >
                     <div className={`absolute top-1 size-4 bg-white rounded-full transition-transform ${currentIsDarkMode ? 'left-7' : 'left-1'} `}></div>
