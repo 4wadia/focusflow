@@ -15,6 +15,7 @@ interface ProfileViewProps {
 export const ProfileView: React.FC<ProfileViewProps> = ({ user, onUpdateUser, onBack, onLogout, completedCount, completedTasks }) => {
   const [formData, setFormData] = useState(user);
   const [isSaving, setIsSaving] = useState(false);
+  const [isDark, setIsDark] = useState(() => user.preferences?.darkMode ?? false);
 
   useEffect(() => {
     setFormData(user);
@@ -49,6 +50,8 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ user, onUpdateUser, on
   const handleToggle = async (key: 'emailNotifications' | 'pushNotifications' | 'darkMode') => {
     if (!formData.preferences) return;
 
+    const currentPreferences = formData.preferences;
+
     const newPreferences = {
       ...formData.preferences,
       [key]: !((formData.preferences as any)[key])
@@ -58,6 +61,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ user, onUpdateUser, on
 
     // For darkMode, update DOM immediately for instant feedback
     if (key === 'darkMode') {
+      setIsDark(newPreferences.darkMode);
       if (newPreferences.darkMode) {
         document.documentElement.classList.add('dark');
       } else {
@@ -82,6 +86,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ user, onUpdateUser, on
 
       // Revert DOM change if it was darkMode
       if (key === 'darkMode') {
+        setIsDark(currentPreferences.darkMode);
         if (currentPreferences.darkMode) {
           document.documentElement.classList.add('dark');
         } else {
@@ -93,49 +98,6 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ user, onUpdateUser, on
     }
   };
 
-
-  const toggleTheme = async () => {
-    const newIsDark = !isDark;
-    setIsDark(newIsDark);
-
-    const html = document.documentElement;
-    if (newIsDark) {
-      html.classList.add('dark');
-    } else {
-      html.classList.remove('dark');
-    }
-
-    if (!formData.preferences) return;
-
-    const newPreferences = {
-      ...formData.preferences,
-      darkMode: newIsDark
-    };
-
-    setFormData(prev => ({ ...prev, preferences: newPreferences }));
-
-    try {
-      setIsSaving(true);
-      const { user: updatedUser } = await userApi.updateProfile({
-        preferences: newPreferences
-      });
-      onUpdateUser(updatedUser);
-    } catch (error) {
-      console.error("Failed to update theme preference", error);
-      // Revert on error
-      setIsDark(!newIsDark);
-      if (!newIsDark) {
-        html.classList.add('dark');
-      } else {
-        html.classList.remove('dark');
-      }
-      setFormData(prev => ({
-        ...prev,
-        preferences: { ...prev.preferences!, darkMode: !newIsDark }
-      }));
-    } finally {
-      setIsSaving(false);
-    }
   const toggleTheme = () => {
     handleToggle('darkMode');
   };

@@ -198,27 +198,6 @@ export default function App() {
       return newIsDarkMode;
     });
   }, []);
-    const newIsDarkMode = !isDarkMode;
-    setIsDarkMode(newIsDarkMode);
-
-    // If user is logged in, save preference to their profile
-    if (isAuthenticated() && user?.preferences) {
-      const newPreferences = {
-        ...user.preferences,
-        darkMode: newIsDarkMode
-      };
-
-      userApi.updateProfile({ preferences: newPreferences })
-        .then(({ user: updatedUser }) => {
-          setUser(updatedUser);
-        })
-        .catch(err => {
-          console.error("Failed to save dark mode preference:", err);
-          // Optional: show a toast to the user
-          setIsDarkMode(!newIsDarkMode);
-        });
-    }
-  }, [isDarkMode, user]);
 
   // --- Auth & Data Loading ---
 
