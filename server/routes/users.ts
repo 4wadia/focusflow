@@ -1,4 +1,5 @@
 import { Elysia, t } from 'elysia';
+import mongoose from 'mongoose';
 import { User } from '../models';
 import { authMiddleware } from '../middleware/auth';
 
@@ -63,10 +64,21 @@ export const userRoutes = new Elysia({ prefix: '/api/users' })
 
         const { Task } = await import('../models');
 
-        const [totalTasks, completedTasks] = await Promise.all([
-            Task.countDocuments({ userId: user.userId }),
-            Task.countDocuments({ userId: user.userId, isCompleted: true })
+        const statsResult = await Task.aggregate([
+            { $match: { userId: new mongoose.Types.ObjectId(user.userId) } },
+            {
+                $group: {
+                    _id: null,
+                    totalTasks: { $sum: 1 },
+                    completedTasks: {
+                        $sum: { $cond: [{ $eq: ['$isCompleted', true] }, 1, 0] }
+                    }
+                }
+            }
         ]);
+
+        const totalTasks = statsResult[0]?.totalTasks || 0;
+        const completedTasks = statsResult[0]?.completedTasks || 0;
 
         return {
             stats: {

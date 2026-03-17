@@ -175,6 +175,13 @@ export default function App() {
     localStorage.setItem('focusflow_darkMode', String(isDarkMode));
   }, [isDarkMode]);
 
+  // Sync isDarkMode state with user preferences
+  useEffect(() => {
+    if (user?.preferences?.darkMode !== undefined) {
+      setIsDarkMode(user.preferences.darkMode);
+    }
+  }, [user?.preferences?.darkMode]);
+
   const handleToggleDarkMode = useCallback(() => {
     setIsDarkMode(prev => {
       const newIsDarkMode = !prev;
@@ -191,6 +198,27 @@ export default function App() {
       return newIsDarkMode;
     });
   }, []);
+    const newIsDarkMode = !isDarkMode;
+    setIsDarkMode(newIsDarkMode);
+
+    // If user is logged in, save preference to their profile
+    if (isAuthenticated() && user?.preferences) {
+      const newPreferences = {
+        ...user.preferences,
+        darkMode: newIsDarkMode
+      };
+
+      userApi.updateProfile({ preferences: newPreferences })
+        .then(({ user: updatedUser }) => {
+          setUser(updatedUser);
+        })
+        .catch(err => {
+          console.error("Failed to save dark mode preference:", err);
+          // Optional: show a toast to the user
+          setIsDarkMode(!newIsDarkMode);
+        });
+    }
+  }, [isDarkMode, user]);
 
   // --- Auth & Data Loading ---
 
@@ -643,41 +671,32 @@ export default function App() {
       cols = cols.filter(c => c.title === activeTab);
     }
 
-    // Filter by Date
-    cols = cols.map(col => ({
-      ...col,
-      tasks: col.tasks.filter(t => t.date === selectedDateStr)
-    }));
+    const query = searchQuery.trim().toLowerCase();
 
-    // Filter by Search Query (Task Title)
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase();
-      cols = cols.map(col => ({
-        ...col,
-        tasks: col.tasks.filter(t => t.title.toLowerCase().includes(query))
-      }));
-    }
+    // Combine all task-level filters into a single pass to save array allocations and CPU cycles
+    cols = cols.map(col => {
+      const filteredTasks = col.tasks.filter(t => {
+        // Filter by Date
+        if (t.date !== selectedDateStr) return false;
 
-    // Filter by Status
-    if (filterStatus === 'Pending') {
-      cols = cols.map(col => ({
-        ...col,
-        tasks: col.tasks.filter(t => !t.isCompleted)
-      }));
-    } else if (filterStatus === 'Completed') {
-      cols = cols.map(col => ({
-        ...col,
-        tasks: col.tasks.filter(t => t.isCompleted)
-      }));
-    }
+        // Filter by Search Query
+        if (query && !t.title.toLowerCase().includes(query)) return false;
 
-    // Filter by Priority
-    if (filterPriority !== 'All') {
-      cols = cols.map(col => ({
+        // Filter by Status
+        if (filterStatus === 'Pending' && t.isCompleted) return false;
+        if (filterStatus === 'Completed' && !t.isCompleted) return false;
+
+        // Filter by Priority
+        if (filterPriority !== 'All' && t.priority !== filterPriority) return false;
+
+        return true;
+      });
+
+      return {
         ...col,
-        tasks: col.tasks.filter(t => t.priority === filterPriority)
-      }));
-    }
+        tasks: filteredTasks
+      };
+    });
 
     return cols;
   }, [columns, activeTab, searchQuery, selectedDateStr, filterStatus, filterPriority]);
